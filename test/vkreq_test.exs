@@ -9,14 +9,24 @@ defmodule VKReqTest do
     use Plug.Router
 
     plug :match
-    plug VKReq, [
-      callback_module: VKReqTest.Callback,
-    ]
+    plug VKReq, callback_module: VKReqTest.Callback
     plug :dispatch
 
     get "/" do
-      conn
-      |> send_resp(200, "OK")
+      send_resp(conn, 200, "OK")
+    end
+  end
+
+  defmodule TestRouterPlugDisabled do
+    import Plug.Conn
+    use Plug.Router
+
+    plug :match
+    plug VKReq, callback_module: VKReqTest.Callback, enabled: false
+    plug :dispatch
+
+    get "/" do
+      send_resp(conn, 200, "OK")
     end
   end
 
@@ -69,6 +79,15 @@ defmodule VKReqTest do
     auth_key = get_auth_key(config)
     conn = conn(:get, "/?api_id=#{config.app_id}&viewer_id=#{@viewer_id}&auth_key=#{auth_key}")
     |> TestRouterPlug.call([])
+    assert conn.status == 200
+    assert Map.has_key?(conn.private, :test_callback)
+    assert conn.private.test_callback == "ran"
+  end
+
+  test "on_success callback is always called when 'enabled' config value is set to false", %{config: config} do
+    conn = conn(:get, "/")
+    |> TestRouterPlugDisabled.call([])
+    assert conn.status == 200
     assert Map.has_key?(conn.private, :test_callback)
     assert conn.private.test_callback == "ran"
   end

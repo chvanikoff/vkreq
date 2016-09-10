@@ -16,11 +16,12 @@ defmodule VKReq do
       config :vkreq, VKReq,
         app_id: "1234567",
         app_key: "0123456789abcdefABCD",
-        callback_module: MyApp.VKReqCallback
+        callback_module: MyApp.VKReqCallback,
+        enabled: Mix.env == :prod
 
   Any of the config params can be passed as plug options, example:
       
-      plug VKReq, app_id: "1234567", app_key: "0123456789abcdefABCD", callback_module: MyApp.VKReqCallback
+      plug VKReq, app_id: "1234567", app_key: "0123456789abcdefABCD", callback_module: MyApp.VKReqCallback, enabled: true
   """
 
   import Plug.Conn
@@ -37,7 +38,7 @@ defmodule VKReq do
   @doc false
   def call(conn, config) do
     conn = fetch_query_params(conn)
-    case validate_request(conn.query_params, config.app_id, config.app_key) do
+    case validate_request(conn.query_params, config.app_id, config.app_key, config.enabled) do
       :ok ->
         config.callback_module.on_success(conn)
       {:error, error} ->
@@ -45,7 +46,10 @@ defmodule VKReq do
     end
   end
 
-  defp validate_request(%{"api_id" => app_id, "viewer_id" => viewer_id, "auth_key" => auth_key}, app_id, app_key) do
+  # Plug is disabled by config value
+  defp validate_request(_params, _app_id, _app_key, false), do: :ok
+  # Required request params are in place, need to validate
+  defp validate_request(%{"api_id" => app_id, "viewer_id" => viewer_id, "auth_key" => auth_key}, app_id, app_key, true) do
     hash = "#{app_id}_#{viewer_id}_#{app_key}"
     |> :erlang.md5()
     |> Base.encode16(case: :lower)
@@ -54,5 +58,6 @@ defmodule VKReq do
       _invalid -> {:error, :hash_mismatch}
     end
   end
-  defp validate_request(_params, _app_id, _app_key), do: {:error, :required_params_missing}
+  # Required request params are missing
+  defp validate_request(_params, _app_id, _app_key, true), do: {:error, :required_params_missing}
 end

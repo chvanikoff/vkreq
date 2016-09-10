@@ -13,10 +13,12 @@ This plug ensures request is a valid VK request
       config :vkreq, VKReq,
         app_id: "1234567",
         app_key: "0123456789abcdefABCD",
-        callback_module: MyApp.VKReqCallback
+        callback_module: MyApp.VKReqCallback,
+        enabled: Mix.env == :prod
+
   Any of the config params can be passed as plug options, example:
       
-      plug VKReq, app_id: "1234567", app_key: "0123456789abcdefABCD", callback_module: MyApp.VKReqCallback
+      plug VKReq, app_id: "1234567", app_key: "0123456789abcdefABCD", callback_module: MyApp.VKReqCallback, enabled: true
 
 ## Installation
 

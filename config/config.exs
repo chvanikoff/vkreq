@@ -31,4 +31,5 @@ use Mix.Config
 config :vkreq, VKReq,
   app_id: "1234567",
   app_key: "01234567890abcdefABCD",
-  callback_module: VKReq.Callback
+  callback_module: VKReq.Callback,
+  enabled: true
